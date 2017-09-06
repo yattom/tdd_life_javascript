@@ -2,7 +2,7 @@ var drawnAliveCellsCount;
 var drawnDeadCellsCount;
 var drawnCount;
 var test9AliveCells = function() {
-  cells = {
+  var cells = {
     "0,0": 1, "1,0": 1, "2,0": 1,
     "0,1": 1, "1,1": 1, "2,1": 1,
     "0,2": 1, "1,2": 1, "2,2": 1,
@@ -12,8 +12,7 @@ var test9AliveCells = function() {
 }
 
 var testAliveAndDeadCells = function() {
-  // 生き死に混ざったセルの描画テスト
-  cells = {
+  var cells = {
     "0,0": 1, "1,0": 0, "2,0": 0,
     "0,1": 0, "1,1": 1, "2,1": 0,
     "0,2": 0, "1,2": 0, "2,2": 1,
@@ -23,21 +22,60 @@ var testAliveAndDeadCells = function() {
   console.assert(drawnDeadCellsCount == 6, '死んだセルを6つ描画した');
 }
 
-var testGenerateNextStep = function() {
-  var initialCells = {
+var testDraw2Steps = function() {
+  processGameOfLife({}, 2);
+  console.assert(drawnCount == 3, '3世代分描画した');
+}
+
+var testInNextStepTheCellIsDeadByUnderpopulation = function() {
+  var cells = {
     "0,0": 1, "1,0": 0, "2,0": 0,
     "0,1": 0, "1,1": 1, "2,1": 0,
     "0,2": 0, "1,2": 0, "2,2": 1,
   };
-  processGameOfLife(initialCells, 2);
-  console.assert(drawnCount == 2, '2世代分描画した');
+  var currentCells = generateNextStepCells(cells);
+  console.assert(currentCells["0,0"] == 0, 'セルが孤立死する');
+}
+
+var testInNextStepTheCellIsDeadByOverpopulation = function() {
+  var cells = {
+    "0,0": 1, "1,0": 0, "2,0": 1,
+    "0,1": 0, "1,1": 1, "2,1": 0,
+    "0,2": 1, "1,2": 0, "2,2": 1,
+  };
+  var currentCells = generateNextStepCells(cells);
+  console.assert(currentCells["1,1"] == 0, 'セルが過密死する');
+}
+
+var testInNextStepTheCellIsReproduced = function() {
+  var cells = {
+    "0,0": 1, "1,0": 0, "2,0": 1,
+    "0,1": 0, "1,1": 0, "2,1": 0,
+    "0,2": 0, "1,2": 0, "2,2": 1,
+  };
+  var currentCells = generateNextStepCells(cells);
+  console.assert(currentCells["1,1"] == 1, 'セルが誕生する');
+}
+
+var testInNextStepTheCellIsAlive = function() {
+  var cells = {
+    "0,0": 1, "1,0": 0, "2,0": 0,
+    "0,1": 0, "1,1": 1, "2,1": 0,
+    "0,2": 0, "1,2": 0, "2,2": 1,
+  };
+  var currentCells = generateNextStepCells(cells);
+  console.assert(currentCells["1,1"] == 1, 'セルが生存する');
 }
 
 onload = function() {
   var tests = [
     test9AliveCells,
     testAliveAndDeadCells,
-    testGenerateNextStep
+    testDraw2Steps,
+    testInNextStepTheCellIsDeadByUnderpopulation,
+    testInNextStepTheCellIsDeadByOverpopulation,
+    testInNextStepTheCellIsReproduced,
+    testInNextStepTheCellIsAlive
   ];
 
   for(var i = 0; i < tests.length; i++) {
@@ -46,11 +84,47 @@ onload = function() {
     drawnCount = 0;
     tests[i]();
   }
+  console.log(tests.length + " tests run.");
 };
 function processGameOfLife(initialCells, steps) {
+  var nextStepCells;
+  var cells = initialCells
+  draw(initialCells);
   for (var i = 0; i < steps; i++) {
-    draw(initialCells);
+    nextStepCells = generateNextStepCells(cells);
+    draw(nextStepCells);
+    cells = nextStepCells;
   }
+  return cells;
+}
+function generateNextStepCells(cells) {
+  nextCells = {};
+  for(var key in cells) {
+    var a = key.split(',');
+    var col = parseInt(a[0]);
+    var row = parseInt(a[1]);
+    var aliveCells = countAliveCells(cells, col, row);
+    if (aliveCells == 3 || (cells[key] == 1 && aliveCells == 2)) {
+      nextCells[key] = 1;
+    } else {
+      nextCells[key] = 0;
+    }
+  }
+  return nextCells;
+}
+function countAliveCells(cells, col, row) {
+  var aliveCells = 0;
+  var neighbours = [[-1, -1], [-1, 0], [-1, 1],
+                    [ 0, -1],          [ 0, 1],
+                    [ 1, -1], [ 1, 0], [ 1, 1]];
+  for(var i = 0; i < neighbours.length; i++) {
+    var dcol = neighbours[i][0];
+    var drow = neighbours[i][1];
+    if(cells[(col + dcol) + ',' + (row + drow)] == 1) {
+      aliveCells++;
+    }
+  }
+  return aliveCells;
 }
 function drawAliveCell(col, row, ctx, cell) {
   ctx.beginPath();
@@ -84,4 +158,13 @@ function draw(cells) {
     }
   }
   drawnCount += 1;
+}
+
+var cells = {
+    "0,0": 0, "1,0": 0, "2,0": 0,
+    "0,1": 1, "1,1": 1, "2,1": 1,
+    "0,2": 0, "1,2": 0, "2,2": 0,
+};
+function buttonclick() {
+  cells = processGameOfLife(cells, 1);
 }
