@@ -1,6 +1,7 @@
 var drawnAliveCellsCount;
 var drawnDeadCellsCount;
-var test_9_alive_cells = function() {
+var drawnCount;
+var test9AliveCells = function() {
   cells = {
     "0,0": 1, "1,0": 1, "2,0": 1,
     "0,1": 1, "1,1": 1, "2,1": 1,
@@ -8,9 +9,9 @@ var test_9_alive_cells = function() {
   };
   draw(cells);
   console.assert(drawnAliveCellsCount == 9, '生きたセルを9つ描画した');
-};
+}
 
-var test_alive_and_dead_cells = function() {
+var testAliveAndDeadCells = function() {
   // 生き死に混ざったセルの描画テスト
   cells = {
     "0,0": 1, "1,0": 0, "2,0": 0,
@@ -20,20 +21,37 @@ var test_alive_and_dead_cells = function() {
   draw(cells);
   console.assert(drawnAliveCellsCount == 3, '生きたセルを3つ描画した');
   console.assert(drawnDeadCellsCount == 6, '死んだセルを6つ描画した');
-};
+}
+
+var testGenerateNextStep = function() {
+  var initialCells = {
+    "0,0": 1, "1,0": 0, "2,0": 0,
+    "0,1": 0, "1,1": 1, "2,1": 0,
+    "0,2": 0, "1,2": 0, "2,2": 1,
+  };
+  processGameOfLife(initialCells, 2);
+  console.assert(drawnCount == 2, '2世代分描画した');
+}
 
 onload = function() {
   var tests = [
-    test_9_alive_cells,
-    test_alive_and_dead_cells
+    test9AliveCells,
+    testAliveAndDeadCells,
+    testGenerateNextStep
   ];
 
   for(var i = 0; i < tests.length; i++) {
     drawnAliveCellsCount = 0;
     drawnDeadCellsCount = 0;
+    drawnCount = 0;
     tests[i]();
   }
 };
+function processGameOfLife(initialCells, steps) {
+  for (var i = 0; i < steps; i++) {
+    draw(initialCells);
+  }
+}
 function drawAliveCell(col, row, ctx, cell) {
   ctx.beginPath();
   var startAngle = 0;
@@ -42,13 +60,12 @@ function drawAliveCell(col, row, ctx, cell) {
   ctx.stroke();
   if ( cell == 1) {
     ctx.fillStyle = 'rgb(0,0,0)';
-    ctx.fill();
     drawnAliveCellsCount += 1;
   } else {
     ctx.fillStyle = 'rgb(255,255,255)';
-    ctx.fill();
     drawnDeadCellsCount += 1;
   }
+  ctx.fill();
 }
 function draw(cells) {
   /* canvas要素のノードオブジェクト */
@@ -66,5 +83,5 @@ function draw(cells) {
       drawAliveCell(col, row, ctx, cell);
     }
   }
-
+  drawnCount += 1;
 }
